@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction, request } from "express";
+import { Request, Response, NextFunction } from "express";
 import { AppError } from "@/utils/AppError";
 import { knex } from "@/database/knex"
 import { z } from "zod"
@@ -40,6 +40,30 @@ class TablesSessionsController {
         .orderBy("closed_at", "desc")
 
       return res.json(sessions);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async show(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = z
+        .string()
+        .transform((value) => Number(value))
+        .refine((value) => !isNaN(value), {
+          message: "Invalid id",
+        })
+        .parse(req.params.id);
+
+      const session = await knex<TableSessionsRepository>("tables_sessions")
+        .where({ id })
+        .first();
+
+      if (!session) {
+        throw new AppError("Table session not found", 404);
+      }
+
+      return res.json(session);
     } catch (error) {
       next(error);
     }
